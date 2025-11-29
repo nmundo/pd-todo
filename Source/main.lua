@@ -4,6 +4,10 @@ local font = gfx.font.new('font/Mini Sans 2X')
 
 local todos = {}
 local selected = 1
+local scrollY = 0
+local itemHeight = 26
+local viewTop = 10
+local viewBottom = 240 - 10
 
 local function loadTodos()
     local data = pd.datastore.read("todos")
@@ -21,10 +25,10 @@ function pd.update()
     gfx.setFont(font)
 
     for i, todo in ipairs(todos) do
-        local y = 10 + (i - 1) * 26
+        local y = viewTop + (i - 1) * itemHeight - scrollY
         if i == selected then
             gfx.setColor(gfx.kColorBlack)
-            gfx.fillRoundRect(10, y, 220, 22, 4)
+            gfx.fillRoundRect(10, y - 2, 380, itemHeight - 2, 4)
             local label = (todo.done and "[x] " or "[ ] ") .. todo.text
             gfx.setImageDrawMode(gfx.kDrawModeFillWhite)
             gfx.drawText(label, 16, y + 2)
@@ -33,6 +37,14 @@ function pd.update()
             gfx.setImageDrawMode(gfx.kDrawModeFillBlack)
             gfx.drawText(label, 16, y + 2)
         end
+    end
+
+    local selY = viewTop + (selected - 1) * itemHeight - scrollY
+
+    if selY < viewTop then
+        scrollY = scrollY - (viewTop - selY)
+    elseif selY + itemHeight > viewBottom then
+        scrollY = scrollY + (selY + itemHeight - viewBottom)
     end
 
     local change = pd.getCrankChange()
