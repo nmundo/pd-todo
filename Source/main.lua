@@ -20,6 +20,27 @@ end
 
 loadTodos()
 
+local inputHandlers = {
+    AButtonDown = function()
+        todos[selected].done = not todos[selected].done
+        saveTodos()
+    end,
+    downButtonDown = function()
+        selected = math.min(#todos, selected + 1)
+    end,
+    upButtonDown = function()
+        selected = math.max(1, selected - 1)
+    end,
+    cranked = function(change)
+        if change > 5 then
+            selected = math.min(#todos, selected + 1)
+        elseif change < -5 then
+            selected = math.max(1, selected - 1)
+        end
+    end
+}
+pd.inputHandlers.push(inputHandlers)
+
 function pd.update()
     gfx.clear()
     gfx.setFont(font)
@@ -45,31 +66,6 @@ function pd.update()
         scrollY = scrollY - (viewTop - selY)
     elseif selY + itemHeight > viewBottom then
         scrollY = scrollY + (selY + itemHeight - viewBottom)
-    end
-
-    local change = pd.getCrankChange()
-
-    if change > 5 then
-        selected = math.min(#todos, selected + 1)
-    elseif change < -5 then
-        selected = math.max(1, selected - 1)
-    end
-
-    if pd.buttonJustPressed(pd.kButtonDown) then
-        selected = math.min(#todos, selected + 1)
-    elseif pd.buttonJustPressed(pd.kButtonUp) then
-        selected = math.max(1, selected - 1)
-    end
-
-    if pd.buttonJustPressed(pd.kButtonA) then
-        todos[selected].done = not todos[selected].done
-        saveTodos()
-    end
-
-    if pd.buttonJustPressed(pd.kButtonB) then
-        table.remove(todos, selected)
-        selected = math.min(selected, #todos)
-        saveTodos()
     end
 end
 
