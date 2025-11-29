@@ -3,16 +3,18 @@ local gfx <const> = pd.graphics
 local font = gfx.font.new('font/Mini Sans 2X')
 
 local todos = {}
-local saveFile = "todos"
+local selected = 1
 
 local function loadTodos()
-    local data = pd.datastore.read(saveFile)
+    local data = pd.datastore.read("todos")
     if data then todos = data end
 end
 
-loadTodos()
+local function saveTodos()
+    pd.datastore.write(todos, "todos")
+end
 
-local selected = 1
+loadTodos()
 
 function pd.update()
     gfx.clear()
@@ -59,9 +61,7 @@ function pd.update()
     end
 end
 
-local function saveTodos()
-    local json = pd.datastore.write(todos, saveFile)
-end
+
 
 function pd.gameWillTerminate()
     saveTodos()
