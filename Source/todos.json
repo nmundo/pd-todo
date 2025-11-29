@@ -1,0 +1,12 @@
+[
+  { "text": "Buy milk", "done": false },
+  { "text": "Write code", "done": false },
+  { "text": "Play with Playdate", "done": false },
+  { "text": "Clean workspace", "done": false },
+  { "text": "Plan lessons for class", "done": false },
+  { "text": "Practice drums", "done": false },
+  { "text": "Refactor UI animation code", "done": false },
+  { "text": "Bike maintenance", "done": false },
+  { "text": "Read a technical article", "done": false },
+  { "text": "Try a new coffee shop", "done": false }
+]
