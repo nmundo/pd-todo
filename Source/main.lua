@@ -1,3 +1,5 @@
+import 'CoreLibs/easing'
+
 local pd <const> = playdate
 local gfx <const> = pd.graphics
 local font = gfx.font.new('font/Mini Sans 2X')
@@ -6,11 +8,13 @@ local todos = {}
 local selected = 1
 local scrollY = 0
 local targetScrollY = 0
-local scrollVel = 0
-local springK = 0.18
-local springDamp = 0.75
+local easingStart = 0
+local easingEnd = 0
+local easingTime = 0
+local easingDuration = 200 -- ms
+local easingFunc = pd.easingFunctions.outCubic
+local animating = false
 local buttonOvershoot = 6
-local scrollEase = 0.2
 local itemHeight = 26
 local viewTop = 10
 local viewBottom = 240 - 10
@@ -32,21 +36,67 @@ local inputHandlers = {
         saveTodos()
     end,
     downButtonDown = function()
+        local old = selected
+        if selected == #todos then
+            -- rubber-band overshoot
+            local totalHeight = #todos * itemHeight
+            local visibleHeight = viewBottom - viewTop
+            local maxScroll = math.max(0, totalHeight - visibleHeight)
+            easingStart = scrollY
+            easingEnd = maxScroll + buttonOvershoot
+            easingTime = 0
+            easingFunc = pd.easingFunctions.outElastic
+            animating = true
+            return
+        end
         selected = math.min(#todos, selected + 1)
-        targetScrollY = targetScrollY + buttonOvershoot
+        local totalHeight = #todos * itemHeight
+        local visibleHeight = viewBottom - viewTop
+        local maxScroll = math.max(0, totalHeight - visibleHeight)
+        easingStart = scrollY
+        easingEnd = maxScroll
+        easingTime = 0
+        easingFunc = pd.easingFunctions.outCubic
+        animating = true
     end,
     upButtonDown = function()
+        local old = selected
+        if selected == 1 then
+            -- rubber-band overshoot
+            easingStart = scrollY
+            easingEnd = -buttonOvershoot
+            easingTime = 0
+            easingFunc = pd.easingFunctions.outElastic
+            animating = true
+            return
+        end
         selected = math.max(1, selected - 1)
-        targetScrollY = targetScrollY - buttonOvershoot
+        easingStart = scrollY
+        easingEnd = 0
+        easingTime = 0
+        easingFunc = pd.easingFunctions.outCubic
+        animating = true
     end,
     cranked = function(change)
         if change > 5 then
             selected = math.min(#todos, selected + 1)
-            scrollVel = scrollVel - 4 -- crank spring impulse
         elseif change < -5 then
             selected = math.max(1, selected - 1)
-            scrollVel = scrollVel + 4 -- crank spring impulse
+        else
+            return
         end
+
+        local target = (selected - 1) * itemHeight
+        local visibleHeight = viewBottom - viewTop
+        local totalHeight = #todos * itemHeight
+        local maxScroll = math.max(0, totalHeight - visibleHeight)
+        target = math.min(math.max(target, 0), maxScroll)
+
+        easingStart = scrollY
+        easingEnd = target
+        easingTime = 0
+        easingFunc = pd.easingFunctions.outCubic
+        animating = true
     end
 }
 pd.inputHandlers.push(inputHandlers)
@@ -61,17 +111,22 @@ local function drawScrollbar()
         local scrollbarY = viewTop + (visibleHeight - scrollbarHeight) * scrollPercent
 
         gfx.setColor(gfx.kColorBlack)
-        gfx.fillRoundRect(400 - 12, scrollbarY, 6, scrollbarHeight, 3)
+        gfx.fillRoundRect(390, scrollbarY, 6, scrollbarHeight, 3)
     end
 end
 
 function pd.update()
     gfx.clear()
     gfx.setFont(font)
-    local displacement = targetScrollY - scrollY
-    scrollVel = scrollVel + displacement * springK
-    scrollVel = scrollVel * springDamp
-    scrollY = scrollY + scrollVel
+    if animating then
+        easingTime += pd.getElapsedTime()
+        if easingTime >= easingDuration then
+            scrollY = easingEnd
+            animating = false
+        else
+            scrollY = easingFunc(easingTime, easingStart, easingEnd - easingStart, easingDuration)
+        end
+    end
 
     for i, todo in ipairs(todos) do
         local y = viewTop + (i - 1) * itemHeight - scrollY
@@ -89,14 +144,6 @@ function pd.update()
     end
 
     drawScrollbar()
-
-    local selY = viewTop + (selected - 1) * itemHeight - scrollY
-
-    if selY < viewTop then
-        targetScrollY = targetScrollY - (viewTop - selY)
-    elseif selY + itemHeight > viewBottom then
-        targetScrollY = targetScrollY + (selY + itemHeight - viewBottom)
-    end
 end
 
 function pd.gameWillTerminate()
