@@ -3,6 +3,7 @@ Builds/
 *.pdx
 
 # Editor-specific files
+.zed/
 .vscode/
 .vs/
 *.swp
