@@ -7,6 +7,9 @@ local font = gfx.font.new('font/Mini Sans 2X')
 local todos = {}
 local selected = 1
 local scrollY = 0
+local scrollVel = 0
+local springK = 0.18
+local springDamp = 0.82
 local targetScrollY = 0
 local easingStart = 0
 local easingEnd = 0
@@ -38,7 +41,7 @@ local inputHandlers = {
     downButtonDown = function()
         local old = selected
         if selected == #todos then
-            -- rubber-band overshoot
+            -- rubber-band overshoot at bottom
             local totalHeight = #todos * itemHeight
             local visibleHeight = viewBottom - viewTop
             local maxScroll = math.max(0, totalHeight - visibleHeight)
@@ -49,20 +52,28 @@ local inputHandlers = {
             animating = true
             return
         end
+
         selected = math.min(#todos, selected + 1)
+
+        -- Only scroll if selected item goes off-screen
+        local selTop = (selected - 1) * itemHeight
+        local selBottom = selTop + itemHeight
+        local viewTopY = scrollY
+        local viewBottomY = scrollY + (viewBottom - viewTop)
         local totalHeight = #todos * itemHeight
         local visibleHeight = viewBottom - viewTop
         local maxScroll = math.max(0, totalHeight - visibleHeight)
-        easingStart = scrollY
-        easingEnd = maxScroll
-        easingTime = 0
-        easingFunc = pd.easingFunctions.outCubic
-        animating = true
+
+        if selBottom > viewBottomY then
+            targetScrollY = math.min(selBottom - visibleHeight, maxScroll)
+        elseif selTop < viewTopY then
+            targetScrollY = math.max(selTop, 0)
+        end
     end,
     upButtonDown = function()
         local old = selected
         if selected == 1 then
-            -- rubber-band overshoot
+            -- rubber-band overshoot at top
             easingStart = scrollY
             easingEnd = -buttonOvershoot
             easingTime = 0
@@ -70,12 +81,23 @@ local inputHandlers = {
             animating = true
             return
         end
+
         selected = math.max(1, selected - 1)
-        easingStart = scrollY
-        easingEnd = 0
-        easingTime = 0
-        easingFunc = pd.easingFunctions.outCubic
-        animating = true
+
+        -- Only scroll if selected item goes off-screen
+        local selTop = (selected - 1) * itemHeight
+        local selBottom = selTop + itemHeight
+        local viewTopY = scrollY
+        local viewBottomY = scrollY + (viewBottom - viewTop)
+        local totalHeight = #todos * itemHeight
+        local visibleHeight = viewBottom - viewTop
+        local maxScroll = math.max(0, totalHeight - visibleHeight)
+
+        if selBottom > viewBottomY then
+            targetScrollY = math.min(selBottom - visibleHeight, maxScroll)
+        elseif selTop < viewTopY then
+            targetScrollY = math.max(selTop, 0)
+        end
     end,
     cranked = function(change)
         if change > 5 then
@@ -92,11 +114,7 @@ local inputHandlers = {
         local maxScroll = math.max(0, totalHeight - visibleHeight)
         target = math.min(math.max(target, 0), maxScroll)
 
-        easingStart = scrollY
-        easingEnd = target
-        easingTime = 0
-        easingFunc = pd.easingFunctions.outCubic
-        animating = true
+        targetScrollY = target
     end
 }
 pd.inputHandlers.push(inputHandlers)
@@ -118,6 +136,7 @@ end
 function pd.update()
     gfx.clear()
     gfx.setFont(font)
+    -- Overshoot easing when animating
     if animating then
         easingTime += pd.getElapsedTime()
         if easingTime >= easingDuration then
@@ -126,6 +145,12 @@ function pd.update()
         else
             scrollY = easingFunc(easingTime, easingStart, easingEnd - easingStart, easingDuration)
         end
+    else
+        -- Normal spring physics for scroll
+        local displacement = targetScrollY - scrollY
+        scrollVel = scrollVel + displacement * springK
+        scrollVel = scrollVel * springDamp
+        scrollY = scrollY + scrollVel
     end
 
     for i, todo in ipairs(todos) do
