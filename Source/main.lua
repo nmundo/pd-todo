@@ -3,6 +3,7 @@ import 'network'
 
 local pd <const> = playdate
 local gfx <const> = pd.graphics
+local menu <const> = pd.getSystemMenu()
 local font = gfx.font.new('font/Mini Sans 2X')
 
 local todos = {}
@@ -26,7 +27,6 @@ local viewBottom = 240 - 10
 local function loadTodos()
     local data = pd.datastore.read("todos")
     if data then todos = data end
-    local fetchedTodos = getTodos()
 end
 
 local function saveTodos()
@@ -135,7 +135,12 @@ local function drawScrollbar()
     end
 end
 
+menu:addMenuItem("Fetch todos", function()
+    getTodos()
+end)
+
 function pd.update()
+    pd.network.http.requestAccess()
     gfx.clear()
     gfx.setFont(font)
     -- Overshoot easing when animating

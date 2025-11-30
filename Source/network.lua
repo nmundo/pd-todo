@@ -1,11 +1,17 @@
 local net <const> = playdate.network
 
+local url = "jsonplaceholder.typicode.com"
 local conn = nil
 
-function getTodos()
-    local url = "jsonplaceholder.typicode.com"
 
+function initConnection()
     conn = net.http.new(url)
+end
+
+function getTodos()
+    if conn == nil then
+        initConnection()
+    end
 
     conn:get("/todos")
 
