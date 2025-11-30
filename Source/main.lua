@@ -121,11 +121,11 @@ local inputHandlers = {
 }
 pd.inputHandlers.push(inputHandlers)
 
-local function drawHeader()
+local function drawHeader(text)
     gfx.setImageDrawMode(gfx.kDrawModeFillWhite)
     gfx.fillRect(0, 0, 400, 20)
     gfx.drawLine(0, 20, 400, 20)
-    gfx.drawText("To Do", 16, 2)
+    gfx.drawText(text, 16, 2)
 
     -- Draw clock on top right
     local time = pd.getTime()
@@ -149,9 +149,7 @@ local function drawScrollbar()
 end
 
 local function drawTodos()
-    gfx.clear()
     gfx.setFont(font)
-    drawHeader()
 
     for i, todo in ipairs(todos) do
         local y = viewTop + (i - 1) * itemHeight - scrollY
@@ -168,6 +166,7 @@ local function drawTodos()
         end
     end
 
+    drawHeader("To Do")
     drawScrollbar()
 end
 
@@ -179,7 +178,6 @@ function pd.update()
     pd.network.http.requestAccess()
     gfx.clear()
     gfx.setFont(font)
-    drawHeader()
     -- Overshoot easing when animating
     if animating then
         easingTime += pd.getElapsedTime()
@@ -195,6 +193,7 @@ function pd.update()
         scrollVel = scrollVel + displacement * springK
         scrollVel = scrollVel * springDamp
         scrollY = scrollY + scrollVel
+        scrollY = math.max(scrollY, 0)
     end
 
     drawTodos()
