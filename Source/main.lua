@@ -16,7 +16,7 @@ local targetScrollY = 0
 local easingStart = 0
 local easingEnd = 0
 local easingTime = 0
-local easingDuration = 200 -- ms
+local easingDuration = 200
 local easingFunc = pd.easingFunctions.outCubic
 local animating = false
 local buttonOvershoot = 6
@@ -41,65 +41,10 @@ local inputHandlers = {
         saveTodos()
     end,
     downButtonDown = function()
-        local old = selected
-        if selected == #todos then
-            -- rubber-band overshoot at bottom
-            local totalHeight = #todos * itemHeight
-            local visibleHeight = viewBottom - viewTop
-            local maxScroll = math.max(0, totalHeight - visibleHeight)
-            easingStart = scrollY
-            easingEnd = maxScroll + buttonOvershoot
-            easingTime = 0
-            easingFunc = pd.easingFunctions.outElastic
-            animating = true
-            return
-        end
-
-        selected = math.min(#todos, selected + 1)
-
-        -- Only scroll if selected item goes off-screen
-        local selTop = (selected - 1) * itemHeight
-        local selBottom = selTop + itemHeight
-        local viewTopY = scrollY
-        local viewBottomY = scrollY + (viewBottom - viewTop)
-        local totalHeight = #todos * itemHeight
-        local visibleHeight = viewBottom - viewTop
-        local maxScroll = math.max(0, totalHeight - visibleHeight)
-
-        if selBottom > viewBottomY then
-            targetScrollY = math.min(selBottom - visibleHeight, maxScroll)
-        elseif selTop < viewTopY then
-            targetScrollY = math.max(selTop, 0)
-        end
+        moveSelection(1)
     end,
     upButtonDown = function()
-        local old = selected
-        if selected == 1 then
-            -- rubber-band overshoot at top
-            easingStart = scrollY
-            easingEnd = -buttonOvershoot
-            easingTime = 0
-            easingFunc = pd.easingFunctions.outElastic
-            animating = true
-            return
-        end
-
-        selected = math.max(1, selected - 1)
-
-        -- Only scroll if selected item goes off-screen
-        local selTop = (selected - 1) * itemHeight
-        local selBottom = selTop + itemHeight
-        local viewTopY = scrollY
-        local viewBottomY = scrollY + (viewBottom - viewTop)
-        local totalHeight = #todos * itemHeight
-        local visibleHeight = viewBottom - viewTop
-        local maxScroll = math.max(0, totalHeight - visibleHeight)
-
-        if selBottom > viewBottomY then
-            targetScrollY = math.min(selBottom - visibleHeight, maxScroll)
-        elseif selTop < viewTopY then
-            targetScrollY = math.max(selTop, 0)
-        end
+        moveSelection(-1)
     end,
     cranked = function(change)
         if change > 5 then
@@ -120,6 +65,44 @@ local inputHandlers = {
     end
 }
 pd.inputHandlers.push(inputHandlers)
+
+function moveSelection(delta)
+    local newSel = selected + delta
+    if newSel < 1 or newSel > #todos then
+        -- rubber-band overshoot at ends
+        local totalHeight = #todos * itemHeight
+        local visibleHeight = viewBottom - viewTop
+        local maxScroll = math.max(0, totalHeight - visibleHeight)
+
+        easingStart = scrollY
+        if newSel < 1 then
+            easingEnd = -buttonOvershoot
+        else
+            easingEnd = maxScroll + buttonOvershoot
+        end
+        easingTime = 0
+        easingFunc = pd.easingFunctions.outElastic
+        animating = true
+        return
+    end
+
+    selected = math.min(#todos, math.max(1, newSel))
+
+    -- Only scroll if selected item goes off-screen
+    local selTop = (selected - 1) * itemHeight
+    local selBottom = selTop + itemHeight
+    local visibleHeight = viewBottom - viewTop
+    local viewTopY = scrollY
+    local viewBottomY = scrollY + visibleHeight
+    local totalHeight = #todos * itemHeight
+    local maxScroll = math.max(0, totalHeight - visibleHeight)
+
+    if selBottom > viewBottomY then
+        targetScrollY = math.min(selBottom - visibleHeight, maxScroll)
+    elseif selTop < viewTopY then
+        targetScrollY = math.max(selTop, 0)
+    end
+end
 
 local function drawHeader(text)
     gfx.setImageDrawMode(gfx.kDrawModeFillWhite)
@@ -149,8 +132,6 @@ local function drawScrollbar()
 end
 
 local function drawTodos()
-    gfx.setFont(font)
-
     for i, todo in ipairs(todos) do
         local y = viewTop + (i - 1) * itemHeight - scrollY
         if i == selected then
@@ -193,7 +174,6 @@ function pd.update()
         scrollVel = scrollVel + displacement * springK
         scrollVel = scrollVel * springDamp
         scrollY = scrollY + scrollVel
-        scrollY = math.max(scrollY, 0)
     end
 
     drawTodos()
