@@ -1,4 +1,5 @@
 import 'CoreLibs/easing'
+import 'network'
 
 local pd <const> = playdate
 local gfx <const> = pd.graphics
@@ -25,6 +26,7 @@ local viewBottom = 240 - 10
 local function loadTodos()
     local data = pd.datastore.read("todos")
     if data then todos = data end
+    local fetchedTodos = getTodos()
 end
 
 local function saveTodos()
