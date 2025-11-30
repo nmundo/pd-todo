@@ -21,7 +21,7 @@ local easingFunc = pd.easingFunctions.outCubic
 local animating = false
 local buttonOvershoot = 6
 local itemHeight = 26
-local viewTop = 10
+local viewTop = 26
 local viewBottom = 240 - 10
 
 local function loadTodos()
@@ -121,6 +121,19 @@ local inputHandlers = {
 }
 pd.inputHandlers.push(inputHandlers)
 
+local function drawHeader()
+    gfx.setImageDrawMode(gfx.kDrawModeFillWhite)
+    gfx.fillRect(0, 0, 400, 20)
+    gfx.drawLine(0, 20, 400, 20)
+    gfx.drawText("To Do", 16, 2)
+
+    -- Draw clock on top right
+    local time = pd.getTime()
+    local timestr = string.format("%02d:%02d", time.hour, time.minute)
+    local tw = gfx.getTextSize(timestr)
+    gfx.drawText(timestr, 400 - tw - 12, 2)
+end
+
 local function drawScrollbar()
     local totalHeight = #todos * itemHeight
     local visibleHeight = viewBottom - viewTop
@@ -135,30 +148,10 @@ local function drawScrollbar()
     end
 end
 
-menu:addMenuItem("Fetch todos", function()
-    getTodos()
-end)
-
-function pd.update()
-    pd.network.http.requestAccess()
+local function drawTodos()
     gfx.clear()
     gfx.setFont(font)
-    -- Overshoot easing when animating
-    if animating then
-        easingTime += pd.getElapsedTime()
-        if easingTime >= easingDuration then
-            scrollY = easingEnd
-            animating = false
-        else
-            scrollY = easingFunc(easingTime, easingStart, easingEnd - easingStart, easingDuration)
-        end
-    else
-        -- Normal spring physics for scroll
-        local displacement = targetScrollY - scrollY
-        scrollVel = scrollVel + displacement * springK
-        scrollVel = scrollVel * springDamp
-        scrollY = scrollY + scrollVel
-    end
+    drawHeader()
 
     for i, todo in ipairs(todos) do
         local y = viewTop + (i - 1) * itemHeight - scrollY
@@ -176,6 +169,35 @@ function pd.update()
     end
 
     drawScrollbar()
+end
+
+menu:addMenuItem("Fetch todos", function()
+    getTodos()
+end)
+
+function pd.update()
+    pd.network.http.requestAccess()
+    gfx.clear()
+    gfx.setFont(font)
+    drawHeader()
+    -- Overshoot easing when animating
+    if animating then
+        easingTime += pd.getElapsedTime()
+        if easingTime >= easingDuration then
+            scrollY = easingEnd
+            animating = false
+        else
+            scrollY = easingFunc(easingTime, easingStart, easingEnd - easingStart, easingDuration)
+        end
+    else
+        -- Normal spring physics for scroll
+        local displacement = targetScrollY - scrollY
+        scrollVel = scrollVel + displacement * springK
+        scrollVel = scrollVel * springDamp
+        scrollY = scrollY + scrollVel
+    end
+
+    drawTodos()
 end
 
 function pd.gameWillTerminate()
