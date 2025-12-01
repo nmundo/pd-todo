@@ -108,6 +108,7 @@ local handlers = {
             anim[selected] = 0
             saveTodos()
         else
+            -- top-right DONE button behavior
             todos[selected].done = not todos[selected].done
             anim[selected] = 0
             saveTodos()
@@ -148,7 +149,10 @@ local handlers = {
         if viewMode == "detail" then
             viewMode = "list"
         else
-            -- delete task when detail panel is open handled in A/B inside panel
+            -- top-right DELETE button behavior in list mode
+            table.remove(todos, selected)
+            selected = math.min(selected, #todos)
+            saveTodos()
         end
     end,
     BButtonUp = function()
@@ -160,7 +164,6 @@ local handlers = {
         end
     end,
 }
-
 pd.inputHandlers.push(handlers)
 
 -- ============================================================
@@ -210,7 +213,34 @@ local function drawDetail()
     local y = panelY + 20
 
     gfx.drawText("Details", textX, y)
+    -- Header action buttons (top‑right)
+    local btnSize = 30
+    local btnY = panelY + 8
+    local deleteX = 400 - btnSize - 28
+    local doneX = deleteX - btnSize - 6
+
+    -- Done button
+    gfx.setColor(gfx.kColorBlack)
+    gfx.fillRoundRect(doneX + 3, btnY + 3, btnSize, btnSize, 6) -- shadow
+    gfx.setColor(gfx.kColorWhite)
+    gfx.fillRoundRect(doneX, btnY, btnSize, btnSize, 6)
+    gfx.setColor(gfx.kColorBlack)
+    gfx.drawRoundRect(doneX, btnY, btnSize, btnSize, 6)
+    gfx.drawText("1", doneX + 9, btnY + 6) -- Placeholder for done icon
+    gfx.setLineWidth(2)
+
+    -- Delete button
+    gfx.setColor(gfx.kColorWhite)
+    gfx.fillRoundRect(deleteX, btnY, btnSize, btnSize, 6)
+    gfx.setColor(gfx.kColorBlack)
+    gfx.drawRoundRect(deleteX, btnY, btnSize, btnSize, 6)
+
+    gfx.drawText("2", deleteX + 9, btnY + 6) -- Placeholder for trash icon
+
+    gfx.setColor(gfx.kColorBlack)
     y += 24
+
+    -- Divider line
     gfx.drawLine(panelX + 8, y, panelX + panelW - 8, y)
     y += 16
 
@@ -241,7 +271,6 @@ end
 
 local function drawTodos()
     gfx.setLineWidth(2)
-    gfx.setStrokeLocation(gfx.kStrokeInside)
     for i, todo in ipairs(todos) do
         local y = viewTop + (i - 1) * itemHeight - scrollY
 

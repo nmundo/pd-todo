@@ -1,6 +1,6 @@
 import 'CoreLibs/easing'
 import 'CoreLibs/graphics'
-import 'todo'
+import 'todo/todo'
 
 local pd <const> = playdate
 local gfx <const> = pd.graphics
