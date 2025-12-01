@@ -1,6 +1,8 @@
 local pd <const> = playdate
 local gfx <const> = pd.graphics
 
+import 'detail'
+
 todo = {}
 
 -- ============================================================
@@ -184,91 +186,6 @@ local function drawScrollbar()
     end
 end
 
-local function drawDetail()
-    local todo = todos[selected]
-
-    -- Dim + dither background using white pixels so the pattern is visible over black
-    -- For white: alpha is inverted (1.0 = transparent, 0.0 = opaque)
-    gfx.setColor(gfx.kColorBlack)
-    gfx.fillRect(0, 0, 400, 240)                             -- to reset any existing dither
-    gfx.setColor(gfx.kColorWhite)
-    gfx.setDitherPattern(0.4, gfx.image.kDitherTypeBayer2x2) -- 0.4 → inverted → visible speckle
-    gfx.fillRect(0, 0, 400, 240)
-    gfx.setDitherPattern(0.0)                                -- reset
-
-    -- Popup panel background
-    local panelX = 20
-    local panelY = 25
-    local panelW = 360
-    local panelH = 200
-
-    gfx.setColor(gfx.kColorBlack)
-    gfx.fillRoundRect(panelX + 3, panelY + 3, panelW, panelH, 12) -- outer shadow
-    gfx.setColor(gfx.kColorWhite)
-    gfx.fillRoundRect(panelX, panelY, panelW, panelH, 12)
-    gfx.setColor(gfx.kColorBlack)
-    gfx.drawRoundRect(panelX, panelY, panelW, panelH, 12)
-
-    local textX = panelX + 12
-    local y = panelY + 20
-
-    gfx.drawText("Details", textX, y)
-    -- Header action buttons (top‑right)
-    local btnSize = 30
-    local btnY = panelY + 8
-    local deleteX = 400 - btnSize - 28
-    local doneX = deleteX - btnSize - 6
-
-    -- Done button
-    gfx.setColor(gfx.kColorBlack)
-    gfx.fillRoundRect(doneX + 3, btnY + 3, btnSize, btnSize, 6) -- shadow
-    gfx.setColor(gfx.kColorWhite)
-    gfx.fillRoundRect(doneX, btnY, btnSize, btnSize, 6)
-    gfx.setColor(gfx.kColorBlack)
-    gfx.drawRoundRect(doneX, btnY, btnSize, btnSize, 6)
-    gfx.drawText("1", doneX + 9, btnY + 6) -- Placeholder for done icon
-    gfx.setLineWidth(2)
-
-    -- Delete button
-    gfx.setColor(gfx.kColorWhite)
-    gfx.fillRoundRect(deleteX, btnY, btnSize, btnSize, 6)
-    gfx.setColor(gfx.kColorBlack)
-    gfx.drawRoundRect(deleteX, btnY, btnSize, btnSize, 6)
-
-    gfx.drawText("2", deleteX + 9, btnY + 6) -- Placeholder for trash icon
-
-    gfx.setColor(gfx.kColorBlack)
-    y += 24
-
-    -- Divider line
-    gfx.drawLine(panelX + 8, y, panelX + panelW - 8, y)
-    y += 16
-
-    gfx.drawText("Task:", textX, y)
-    y += 18
-    gfx.drawText(todo.text or "", textX, y)
-    y += 26
-
-    gfx.drawText("Due Date:", textX, y)
-    y += 18
-    gfx.drawText(todo.dueDate or "None", textX, y)
-    y += 26
-
-    gfx.drawText("Priority:", textX, y)
-    y += 18
-    gfx.drawText(todo.priority or "None", textX, y)
-    y += 26
-
-    -- gfx.drawText("Tags:", textX, y)
-    -- y += 18
-    -- gfx.drawText(todo.tags or "None", textX, y)
-    -- y += 32
-
-    -- Bottom buttons
-    -- local btnY = panelY + panelH - 40
-    -- gfx.drawText("A: Mark Done    B: Delete    ←/B: Close", panelX + 12, btnY)
-end
-
 local function drawTodos()
     gfx.setLineWidth(2)
     for i, todo in ipairs(todos) do
@@ -357,7 +274,7 @@ function todo.update()
 
     drawTodos()
     if viewMode == "detail" then
-        drawDetail()
+        detail.draw(todos[selected], selected)
     end
 end
 
@@ -368,5 +285,3 @@ end
 function todo.save()
     saveTodos()
 end
-
-return todo
