@@ -8,6 +8,7 @@ todo = {}
 -- ============================================================
 
 local todos = {}
+local anim = {} -- per-todo animation progress 0..1
 local selected = 1
 
 -- scrolling / physics
@@ -39,7 +40,11 @@ local buttonOvershoot = 6
 
 local function loadTodos()
     local data = pd.datastore.read("todos")
-    if data then todos = data end
+    if data then
+        todos = data
+        anim = {}
+        for i = 1, #todos do anim[i] = 0 end
+    end
 end
 
 local function saveTodos()
@@ -98,6 +103,7 @@ end
 local handlers = {
     AButtonDown = function()
         todos[selected].done = not todos[selected].done
+        anim[selected] = 0 -- reset animation progress
         saveTodos()
     end,
 
@@ -161,16 +167,29 @@ local function drawTodos()
             gfx.drawText(todo.text, 40, y + 2)
         end
 
-        gfx.drawRect(15, y + 2, itemHeight - 8, itemHeight - 8)
+        -- Draw checkbox
+        gfx.drawRect(15, y + 1, itemHeight - 8, itemHeight - 8)
 
         if todo.done then
-            -- Draw checkmark
             local cx = 15
-            local cy = y + 2
+            local cy = y + 1
             local size = itemHeight - 8
+            local p = anim[i] or 0
+
+            -- Draw animated checkmark
+            local x1, y1 = cx + 4, cy + size / 2
+            local x2, y2 = cx + size / 2 - 2, cy + size - 4
+            local x3, y3 = cx + size - 4, cy + 4
+
             gfx.setLineWidth(3)
-            gfx.drawLine(cx + 4, cy + size / 2, cx + size / 2 - 2, cy + size - 4)
-            gfx.drawLine(cx + size / 2 - 2, cy + size - 4, cx + size - 4, cy + 4)
+            if p < 0.5 then
+                local t = p / 0.5
+                gfx.drawLine(x1, y1, x1 + (x2 - x1) * t, y1 + (y2 - y1) * t)
+            else
+                gfx.drawLine(x1, y1, x2, y2)
+                local t = (p - 0.5) / 0.5
+                gfx.drawLine(x2, y2, x2 + (x3 - x2) * t, y2 + (y3 - y2) * t)
+            end
             gfx.setLineWidth(2)
         end
     end
@@ -199,6 +218,14 @@ function todo.update()
         scrollVel = scrollVel * springDamp
         scrollY = scrollY + scrollVel
         scrollY = math.max(scrollY, 0)
+    end
+
+    for i = 1, #todos do
+        if todos[i].done and anim[i] < 1 then
+            anim[i] = math.min(anim[i] + 0.08, 1)
+        elseif not todos[i].done and anim[i] > 0 then
+            anim[i] = math.max(anim[i] - 0.08, 0)
+        end
     end
 
     drawTodos()
