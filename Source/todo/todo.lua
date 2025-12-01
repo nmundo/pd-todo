@@ -274,7 +274,7 @@ function todo.update()
 
     drawTodos()
     if viewMode == "detail" then
-        detail.draw(todos[selected], selected)
+        detail.draw(todos[selected], selected, function() viewMode = "list" end)
     end
 end
 

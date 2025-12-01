@@ -3,21 +3,36 @@ local gfx <const> = pd.graphics
 
 detail = {}
 
-local handlers = {
-    AButtonDown = function()
-        todos[selected].done = not todos[selected].done
-    end,
-    BButtonDown = function()
-        table.remove(todos, selected)
-        return "close" -- signal to caller
-    end,
-    leftButtonDown = function()
-        return "close"
-    end,
-}
+local selectedButton = "doneBtn"
 
 -- Draw the popup for the given todo
-function detail.draw(todo, selectedIndex)
+function detail.draw(todo, selectedIndex, closeCallback)
+    local btnActions = {
+        doneBtn = function(todo)
+            todo.done = not todo.done
+        end,
+        deleteBtn = function(todo, closeCallback)
+            -- TODO Delete confirmation dialog
+        end,
+    }
+
+    local handlers = {
+        AButtonDown = function()
+            todos[selected].done = not todos[selected].done
+        end,
+        BButtonDown = function()
+            closeCallback()
+            pd.inputHandlers.pop()
+        end,
+        rightButtonDown = function()
+            selectedButton = "deleteBtn"
+        end,
+        leftButtonDown = function()
+            selectedButton = "doneBtn"
+        end,
+    }
+    pd.inputHandlers.push(handlers)
+
     -- Dim + dither background
     gfx.setColor(gfx.kColorBlack)
     gfx.fillRect(0, 0, 400, 240)
@@ -49,8 +64,10 @@ function detail.draw(todo, selectedIndex)
     local doneX   = deleteX - btnSize - 6
 
     -- Done
-    gfx.setColor(gfx.kColorBlack)
-    gfx.fillRoundRect(doneX + 3, btnY + 3, btnSize, btnSize, 6)
+    if selectedButton == "doneBtn" then
+        gfx.setColor(gfx.kColorBlack)
+        gfx.fillRoundRect(doneX + 3, btnY + 3, btnSize, btnSize, 6) -- shadow
+    end
     gfx.setColor(gfx.kColorWhite)
     gfx.fillRoundRect(doneX, btnY, btnSize, btnSize, 6)
     gfx.setColor(gfx.kColorBlack)
@@ -58,6 +75,10 @@ function detail.draw(todo, selectedIndex)
     gfx.drawText("1", doneX + 9, btnY + 6)
 
     -- Delete
+    if selectedButton == "deleteBtn" then
+        gfx.setColor(gfx.kColorBlack)
+        gfx.fillRoundRect(deleteX + 3, btnY + 3, btnSize, btnSize, 6) -- shadow
+    end
     gfx.setColor(gfx.kColorWhite)
     gfx.fillRoundRect(deleteX, btnY, btnSize, btnSize, 6)
     gfx.setColor(gfx.kColorBlack)
