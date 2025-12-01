@@ -160,12 +160,20 @@ local function drawTodos()
             gfx.fillRoundRect(5, y - 2, 380, itemHeight - 2, 4)
             gfx.setImageDrawMode(gfx.kDrawModeFillWhite)
             gfx.setColor(gfx.kColorWhite)
-            gfx.drawText(todo.text, 40, y + 2)
+
+            -- Draw right-arrow
+            gfx.setLineWidth(2)
+            gfx.setLineCapStyle(gfx.kLineCapStyleRound)
+            local ax = 365
+            local ay = y + (itemHeight - 4) / 2
+            gfx.drawLine(ax, ay - 6, ax + 8, ay)
+            gfx.drawLine(ax + 8, ay, ax, ay + 6)
         else
             gfx.setColor(gfx.kColorBlack)
             gfx.setImageDrawMode(gfx.kDrawModeFillBlack)
-            gfx.drawText(todo.text, 40, y + 2)
         end
+
+        gfx.drawText(todo.text, 40, y + 2)
 
         -- Draw checkbox
         gfx.drawRect(15, y + 1, itemHeight - 8, itemHeight - 8)
