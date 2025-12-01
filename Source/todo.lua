@@ -8,8 +8,9 @@ todo = {}
 -- ============================================================
 
 local todos = {}
-local anim = {} -- per-todo animation progress 0..1
+local anim = {}         -- per-todo animation progress 0..1
 local selected = 1
+local viewMode = "list" -- "list" or "detail"
 
 -- scrolling / physics
 local scrollY = 0
@@ -102,9 +103,15 @@ end
 
 local handlers = {
     AButtonDown = function()
-        todos[selected].done = not todos[selected].done
-        anim[selected] = 0 -- reset animation progress
-        saveTodos()
+        if viewMode == "detail" then
+            todos[selected].done = not todos[selected].done
+            anim[selected] = 0
+            saveTodos()
+        else
+            todos[selected].done = not todos[selected].done
+            anim[selected] = 0
+            saveTodos()
+        end
     end,
 
     upButtonDown = function() moveSelection(-1) end,
@@ -126,7 +133,32 @@ local handlers = {
         local maxScroll = math.max(0, totalHeight - visibleHeight)
 
         targetScrollY = math.min(math.max(target, 0), maxScroll)
-    end
+    end,
+    rightButtonDown = function()
+        if viewMode == "list" then
+            viewMode = "detail"
+        end
+    end,
+    leftButtonDown = function()
+        if viewMode == "detail" then
+            viewMode = "list"
+        end
+    end,
+    BButtonDown = function()
+        if viewMode == "detail" then
+            viewMode = "list"
+        else
+            -- delete task when detail panel is open handled in A/B inside panel
+        end
+    end,
+    BButtonUp = function()
+        if viewMode == "detail" then
+            table.remove(todos, selected)
+            selected = math.min(selected, #todos)
+            viewMode = "list"
+            saveTodos()
+        end
+    end,
 }
 
 pd.inputHandlers.push(handlers)
@@ -147,6 +179,64 @@ local function drawScrollbar()
         gfx.setColor(gfx.kColorBlack)
         gfx.fillRoundRect(390, scrollbarY, 6, scrollbarHeight, 3)
     end
+end
+
+local function drawDetail()
+    local todo = todos[selected]
+
+    -- Dim + dither background using white pixels so the pattern is visible over black
+    -- For white: alpha is inverted (1.0 = transparent, 0.0 = opaque)
+    gfx.setColor(gfx.kColorBlack)
+    gfx.fillRect(0, 0, 400, 240)                             -- to reset any existing dither
+    gfx.setColor(gfx.kColorWhite)
+    gfx.setDitherPattern(0.4, gfx.image.kDitherTypeBayer2x2) -- 0.4 → inverted → visible speckle
+    gfx.fillRect(0, 0, 400, 240)
+    gfx.setDitherPattern(0.0)                                -- reset
+
+    -- Popup panel background
+    local panelX = 20
+    local panelY = 25
+    local panelW = 360
+    local panelH = 200
+
+    gfx.setColor(gfx.kColorBlack)
+    gfx.fillRoundRect(panelX + 3, panelY + 3, panelW, panelH, 12) -- outer shadow
+    gfx.setColor(gfx.kColorWhite)
+    gfx.fillRoundRect(panelX, panelY, panelW, panelH, 12)
+    gfx.setColor(gfx.kColorBlack)
+    gfx.drawRoundRect(panelX, panelY, panelW, panelH, 12)
+
+    local textX = panelX + 12
+    local y = panelY + 20
+
+    gfx.drawText("Details", textX, y)
+    y += 24
+    gfx.drawLine(panelX + 8, y, panelX + panelW - 8, y)
+    y += 16
+
+    gfx.drawText("Task:", textX, y)
+    y += 18
+    gfx.drawText(todo.text or "", textX, y)
+    y += 26
+
+    gfx.drawText("Due Date:", textX, y)
+    y += 18
+    gfx.drawText(todo.dueDate or "None", textX, y)
+    y += 26
+
+    gfx.drawText("Priority:", textX, y)
+    y += 18
+    gfx.drawText(todo.priority or "None", textX, y)
+    y += 26
+
+    -- gfx.drawText("Tags:", textX, y)
+    -- y += 18
+    -- gfx.drawText(todo.tags or "None", textX, y)
+    -- y += 32
+
+    -- Bottom buttons
+    -- local btnY = panelY + panelH - 40
+    -- gfx.drawText("A: Mark Done    B: Delete    ←/B: Close", panelX + 12, btnY)
 end
 
 local function drawTodos()
@@ -237,6 +327,9 @@ function todo.update()
     end
 
     drawTodos()
+    if viewMode == "detail" then
+        drawDetail()
+    end
 end
 
 -- ============================================================
