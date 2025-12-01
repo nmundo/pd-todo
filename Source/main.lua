@@ -4,13 +4,14 @@ import 'todo'
 
 local pd <const> = playdate
 local gfx <const> = pd.graphics
+local font = gfx.font.new('font/Mini Sans 2X')
+gfx.setFont(font)
 
-local function drawHeader()
+local function drawHeader(title)
     gfx.setImageDrawMode(gfx.kDrawModeFillWhite)
     gfx.fillRect(0, 0, 400, 20)
     gfx.drawLine(0, 20, 400, 20)
-    gfx.drawText("To Do", 16, 2)
-
+    gfx.drawText(title, 16, 2)
     local time = pd.getTime()
     local timestr = string.format("%02d:%02d", time.hour, time.minute)
     local tw = gfx.getTextSize(timestr)
@@ -18,8 +19,9 @@ local function drawHeader()
 end
 
 function playdate.update()
+    gfx.clear()
     todo.update()
-    drawHeader()
+    drawHeader("To Do")
 end
 
 function playdate.gameWillTerminate()

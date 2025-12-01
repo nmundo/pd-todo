@@ -7,8 +7,6 @@ todo = {}
 -- State
 -- ============================================================
 
-local font = gfx.font.new('font/Mini Sans 2X')
-
 local todos = {}
 local selected = 1
 
@@ -128,7 +126,7 @@ local handlers = {
 pd.inputHandlers.push(handlers)
 
 -- ============================================================
--- Drawing
+-- Drawing UI
 -- ============================================================
 
 local function drawScrollbar()
@@ -146,19 +144,34 @@ local function drawScrollbar()
 end
 
 local function drawTodos()
+    gfx.setLineWidth(2)
+    gfx.setStrokeLocation(gfx.kStrokeInside)
     for i, todo in ipairs(todos) do
         local y = viewTop + (i - 1) * itemHeight - scrollY
 
-        local label = (todo.done and "[x] " or "[ ] ") .. todo.text
-
         if i == selected then
             gfx.setColor(gfx.kColorBlack)
-            gfx.fillRoundRect(10, y - 2, 375, itemHeight - 2, 4)
+            gfx.fillRoundRect(5, y - 2, 380, itemHeight - 2, 4)
             gfx.setImageDrawMode(gfx.kDrawModeFillWhite)
-            gfx.drawText(label, 16, y + 2)
+            gfx.setColor(gfx.kColorWhite)
+            gfx.drawText(todo.text, 40, y + 2)
         else
+            gfx.setColor(gfx.kColorBlack)
             gfx.setImageDrawMode(gfx.kDrawModeFillBlack)
-            gfx.drawText(label, 16, y + 2)
+            gfx.drawText(todo.text, 40, y + 2)
+        end
+
+        gfx.drawRect(15, y + 2, itemHeight - 8, itemHeight - 8)
+
+        if todo.done then
+            -- Draw checkmark
+            local cx = 15
+            local cy = y + 2
+            local size = itemHeight - 8
+            gfx.setLineWidth(3)
+            gfx.drawLine(cx + 4, cy + size / 2, cx + size / 2 - 2, cy + size - 4)
+            gfx.drawLine(cx + size / 2 - 2, cy + size - 4, cx + size - 4, cy + 4)
+            gfx.setLineWidth(2)
         end
     end
 
@@ -170,9 +183,6 @@ end
 -- ============================================================
 
 function todo.update()
-    gfx.clear()
-    gfx.setFont(font)
-
     if animating then
         easingTime += pd.getElapsedTime()
         if easingTime >= easingDuration then
