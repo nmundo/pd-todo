@@ -105,21 +105,15 @@ end
 
 local handlers = {
     AButtonDown = function()
-        if viewMode == "detail" then
-            todos[selected].done = not todos[selected].done
-            anim[selected] = 0
-            saveTodos()
-        else
-            -- top-right DONE button behavior
-            todos[selected].done = not todos[selected].done
-            anim[selected] = 0
-            saveTodos()
-        end
+        todos[selected].done = not todos[selected].done
+        anim[selected] = 0
+        saveTodos()
     end,
-
     upButtonDown = function() moveSelection(-1) end,
     downButtonDown = function() moveSelection(1) end,
-
+    rightButtonDown = function()
+        viewMode = "detail"
+    end,
     cranked = function(change)
         if change > 5 then
             selected = math.min(#todos, selected + 1)
@@ -136,34 +130,6 @@ local handlers = {
         local maxScroll = math.max(0, totalHeight - visibleHeight)
 
         targetScrollY = math.min(math.max(target, 0), maxScroll)
-    end,
-    rightButtonDown = function()
-        if viewMode == "list" then
-            viewMode = "detail"
-        end
-    end,
-    leftButtonDown = function()
-        if viewMode == "detail" then
-            viewMode = "list"
-        end
-    end,
-    BButtonDown = function()
-        if viewMode == "detail" then
-            viewMode = "list"
-        else
-            -- top-right DELETE button behavior in list mode
-            table.remove(todos, selected)
-            selected = math.min(selected, #todos)
-            saveTodos()
-        end
-    end,
-    BButtonUp = function()
-        if viewMode == "detail" then
-            table.remove(todos, selected)
-            selected = math.min(selected, #todos)
-            viewMode = "list"
-            saveTodos()
-        end
     end,
 }
 pd.inputHandlers.push(handlers)
@@ -246,6 +212,7 @@ end
 -- ============================================================
 
 function todo.update()
+    pd.inputHandlers.push(handlers)
     if animating then
         easingTime += pd.getElapsedTime()
         if easingTime >= easingDuration then

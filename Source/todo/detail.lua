@@ -8,27 +8,33 @@ local selectedButton = "doneBtn"
 -- Draw the popup for the given todo
 function detail.draw(todo, selectedIndex, closeCallback)
     local btnActions = {
-        doneBtn = function(todo)
+        doneBtn = function()
             todo.done = not todo.done
         end,
-        deleteBtn = function(todo, closeCallback)
+        deleteBtn = function()
             -- TODO Delete confirmation dialog
         end,
     }
 
     local handlers = {
         AButtonDown = function()
-            todos[selected].done = not todos[selected].done
+            btnActions[selectedButton]()
         end,
         BButtonDown = function()
-            closeCallback()
             pd.inputHandlers.pop()
+            closeCallback()
         end,
         rightButtonDown = function()
             selectedButton = "deleteBtn"
         end,
         leftButtonDown = function()
             selectedButton = "doneBtn"
+        end,
+        upButtonDown = function()
+            -- TODO
+        end,
+        downButtonDown = function()
+            -- TODO
         end,
     }
     pd.inputHandlers.push(handlers)
